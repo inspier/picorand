@@ -19,6 +19,7 @@ pub trait PicoRandRNG {
 
 /// Requirement for implicitly bounded RNG.
 pub trait PicoRandGenerate<R: PicoRandRNG, T> {
+    /// Generate a new implicitly bound number using the PRNG.
     fn generate(&mut self) -> R::Output;
 }
 
@@ -63,7 +64,6 @@ impl PicoRandRNG for WyRand {
     }
 }
 
-
 /// An abstraction over a PRNG with a specific seed.
 pub struct RNG<R: PicoRandRNG = WyRand, T = u64> {
     rng: R,
@@ -80,6 +80,15 @@ impl<R: PicoRandRNG, T> RNG<R, T> {
     }
 
     /// Generate a number in the specified range.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use picorand::{RNG, WyRand};
+    /// let mut rng = RNG::<WyRand, u8>::new(0xDEADBEEF);
+    /// let generated = rng.generate_range(0xC0, 0xDE);
+    /// assert!(generated >= 0xC0 || generated <= 0xDE);
+    /// ```
     pub fn generate_range(&mut self, min: usize, max: usize) -> R::Output {
         self.rng.rand_range(min, max)
     }
@@ -100,3 +109,41 @@ macro_rules! ImplPicoRandCommon {
 }
 
 ImplPicoRandCommon!(for u8, u16, u32, u64);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use paste::paste;
+
+    macro_rules! ImplPicoRandTest {
+        (for $($type:tt),+) => {
+            $(ImplPicoRandTest!($type);)*
+        };
+
+        ($type:ident) => {
+        paste! {
+            #[test]
+            fn [<test_picorand_generate_ $type>]() {
+                let mut rng = RNG::<WyRand, $type>::new(0xDEADBEEF);
+                let mut generated: $type;
+                for _ in 1..100 {
+                generated = rng.generate() as _;
+                assert!(generated >= $type::MIN || generated <= $type::MAX);
+                }
+            }
+
+            #[test]
+            fn [<test_picorand_generate_range_ $type>]() {
+                let mut rng = RNG::<WyRand, $type>::new(0xDEADBEEF);
+                let mut generated: $type;
+                for _ in 1..100 {
+                generated = rng.generate_range(0xC0, 0xDE) as _;
+                assert!(generated >= 0xC0 || generated <= 0xDE);
+                }
+            }
+        }
+        };
+    }
+
+    ImplPicoRandTest!(for u8, u16, u32, u64);
+}
