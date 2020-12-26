@@ -1,9 +1,14 @@
 #![no_std]
 
+use core::convert::{TryFrom, TryInto};
 use core::marker::PhantomData;
 
 /// Requirements for compatible PRNG.
-pub trait PicoRandRNG {
+pub trait PicoRandRNG
+where
+    Self::Input: TryFrom<u128>,
+    Self::Output: TryFrom<u128>,
+{
     /// Input type for the PRNG.
     type Input;
     /// Output type for the PRNG.
@@ -20,7 +25,7 @@ pub trait PicoRandRNG {
 /// Requirement for implicitly bounded RNG.
 pub trait PicoRandGenerate<R: PicoRandRNG, T> {
     /// Generate a new implicitly bound number using the PRNG.
-    fn generate(&mut self) -> R::Output;
+    fn generate(&mut self) -> T;
 }
 
 /// A WyRand PRNG instance. Note: This PRNG is NOT cryptographically secure.
@@ -70,7 +75,10 @@ pub struct RNG<R: PicoRandRNG = WyRand, T = u64> {
     _marker: PhantomData<T>,
 }
 
-impl<R: PicoRandRNG, T> RNG<R, T> {
+impl<R: PicoRandRNG, T> RNG<R, T>
+where
+    <R as PicoRandRNG>::Output: TryInto<T>,
+{
     /// Create a new [`RNG`] instance using a specific PRNG and a specific seed.
     pub fn new(seed: R::Input) -> Self {
         RNG::<R, T> {
@@ -100,9 +108,19 @@ macro_rules! ImplPicoRandCommon {
     };
 
     ($type:ident) => {
-        impl<R: PicoRandRNG> PicoRandGenerate<R, $type> for RNG<R, $type> {
-            fn generate(&mut self) -> R::Output {
-                self.rng.rand_range($type::MIN as usize, $type::MAX as usize)
+        impl<R: PicoRandRNG> PicoRandGenerate<R, $type> for RNG<R, $type> where <R as PicoRandRNG>::Output: Into<u128> {
+            /// Generate a number in the implicit range of the type of the given [`RNG`].
+            ///
+            /// # Example
+            ///
+            /// ```
+            /// use picorand::{RNG, WyRand};
+            /// let mut rng = RNG::<WyRand, u32>::new(0xDEADBEEF);
+            /// let generated = rng.generate_range(0xC0, 0xDE);
+            /// assert!(generated >= 0xC0 || generated <= 0xDE);
+            /// ```
+            fn generate(&mut self) -> $type {
+                u128::try_from(self.rng.rand_range($type::MIN as usize, $type::MAX as usize)).unwrap().try_into().unwrap()
             }
         }
     };
@@ -127,7 +145,7 @@ mod tests {
                 let mut rng = RNG::<WyRand, $type>::new(0xDEADBEEF);
                 let mut generated: $type;
                 for _ in 1..100 {
-                generated = rng.generate() as _;
+                generated = rng.generate();
                 assert!(generated >= $type::MIN || generated <= $type::MAX);
                 }
             }
