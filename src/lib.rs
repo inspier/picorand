@@ -1,7 +1,9 @@
 #![no_std]
 
-use core::convert::{TryFrom, TryInto};
-use core::marker::PhantomData;
+use core::{
+    convert::{TryFrom, TryInto},
+    marker::PhantomData,
+};
 
 /// Requirements for compatible PRNG.
 pub trait PicoRandRNG
@@ -47,7 +49,8 @@ impl PicoRandRNG for WyRand {
     /// Generate a new number using the [`WyRand`] PRNG.
     fn rand(&mut self) -> Self::Output {
         self.seed = self.seed.wrapping_add(0xE7037ED1A0B428DB);
-        let x = (self.seed as u128).wrapping_mul((self.seed ^ 0xE7037ED1A0B428DB) as u128);
+        let x = (self.seed as u128)
+            .wrapping_mul((self.seed ^ 0xE7037ED1A0B428DB) as u128);
         ((x >> 64) ^ x) as u64
     }
 
@@ -81,10 +84,7 @@ where
 {
     /// Create a new [`RNG`] instance using a specific PRNG and a specific seed.
     pub fn new(seed: R::Input) -> Self {
-        RNG::<R, T> {
-            rng: R::new(seed),
-            _marker: PhantomData,
-        }
+        RNG::<R, T> { rng: R::new(seed), _marker: PhantomData }
     }
 
     /// Generate a number in the specified range.
@@ -92,13 +92,20 @@ where
     /// # Example
     ///
     /// ```
-    /// use picorand::{RNG, WyRand};
+    /// use picorand::{WyRand, RNG};
     /// let mut rng = RNG::<WyRand, u8>::new(0xDEADBEEF);
     /// let generated = rng.generate_range(0xC0, 0xDE);
     /// assert!(generated >= 0xC0 || generated <= 0xDE);
     /// ```
-    pub fn generate_range(&mut self, min: usize, max: usize) -> R::Output {
-        self.rng.rand_range(min, max)
+    pub fn generate_range(&mut self, min: usize, max: usize) -> T
+    where
+        <R as PicoRandRNG>::Output: Into<u128>,
+        T: Default + TryFrom<u128>,
+    {
+        u128::try_from(self.rng.rand_range(min, max))
+            .unwrap()
+            .try_into()
+            .unwrap_or(Default::default()) // Unreachable
     }
 }
 
@@ -114,10 +121,10 @@ macro_rules! ImplPicoRandCommon {
             /// # Example
             ///
             /// ```
-            /// use picorand::{RNG, WyRand};
+            /// use picorand::{RNG, WyRand, PicoRandGenerate};
             /// let mut rng = RNG::<WyRand, u32>::new(0xDEADBEEF);
-            /// let generated = rng.generate_range(0xC0, 0xDE);
-            /// assert!(generated >= 0xC0 || generated <= 0xDE);
+            /// let generated = rng.generate();
+            /// assert!(generated >= u32::MIN || generated <= u32::MAX);
             /// ```
             fn generate(&mut self) -> $type {
                 u128::try_from(self.rng.rand_range($type::MIN as usize, $type::MAX as usize)).unwrap().try_into().unwrap()
@@ -155,7 +162,7 @@ mod tests {
                 let mut rng = RNG::<WyRand, $type>::new(0xDEADBEEF);
                 let mut generated: $type;
                 for _ in 1..100 {
-                generated = rng.generate_range(0xC0, 0xDE) as _;
+                generated = rng.generate_range(0xC0, 0xDE);
                 assert!(generated >= 0xC0 || generated <= 0xDE);
                 }
             }
