@@ -57,7 +57,7 @@ impl PicoRandRNG for WyRand {
     // Adapted from https://github.com/lemire/FastShuffleExperiments
     /// Constrain a randomly generated number to a fixed range.
     fn rand_range(&mut self, min: usize, max: usize) -> Self::Output {
-        let t = ((-(max as i64)) % (max as i64)) as u64;
+        let t = (-(max as i64)).checked_rem(max as i64).unwrap_or(0) as u64;
         let (mut x, mut m, mut l);
 
         while {
@@ -105,7 +105,7 @@ where
         u128::try_from(self.rng.rand_range(min, max))
             .unwrap()
             .try_into()
-            .unwrap_or(Default::default()) // Unreachable
+            .unwrap_or_default() // Unreachable
     }
 }
 
@@ -127,7 +127,7 @@ macro_rules! ImplPicoRandCommon {
             /// assert!(generated >= u32::MIN || generated <= u32::MAX);
             /// ```
             fn generate(&mut self) -> $type {
-                u128::try_from(self.rng.rand_range($type::MIN as usize, $type::MAX as usize)).unwrap().try_into().unwrap()
+                u128::try_from(self.rng.rand_range($type::MIN as usize, $type::MAX as usize)).unwrap() as _
             }
         }
     };
