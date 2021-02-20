@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(clippy::upper_case_acronyms)]
 
 use core::{
     convert::{TryFrom, TryInto},
@@ -68,7 +69,7 @@ impl PicoRandRNG for WyRand {
             l < t
         } {}
 
-        ((m >> 64) as u64).max(min as u64)
+        ((m >> 64) as u64).clamp(min as _, max as _)
     }
 }
 
