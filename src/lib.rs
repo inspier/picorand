@@ -76,7 +76,7 @@ impl PicoRandRNG for WyRand {
 /// An abstraction over a PRNG with a specific seed.
 pub struct RNG<R: PicoRandRNG = WyRand, T = u64> {
     rng: R,
-    _marker: PhantomData<T>,
+    _marker: PhantomData<fn() -> T>,
 }
 
 impl<R: PicoRandRNG, T> RNG<R, T>
