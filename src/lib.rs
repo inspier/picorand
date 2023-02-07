@@ -96,7 +96,7 @@ where
     /// use picorand::{WyRand, RNG};
     /// let mut rng = RNG::<WyRand, u8>::new(0xDEADBEEF);
     /// let generated = rng.generate_range(0xC0, 0xDE);
-    /// assert!(generated >= 0xC0 || generated <= 0xDE);
+    /// assert!(generated >= 0xC0 || generated < 0xDE);
     /// ```
     pub fn generate_range(&mut self, min: usize, max: usize) -> T
     where
@@ -125,7 +125,7 @@ macro_rules! ImplPicoRandCommon {
             /// use picorand::{RNG, WyRand, PicoRandGenerate};
             /// let mut rng = RNG::<WyRand, u32>::new(0xDEADBEEF);
             /// let generated = rng.generate();
-            /// assert!(generated >= u32::MIN || generated <= u32::MAX);
+            /// assert!(generated >= u32::MIN || generated < u32::MAX);
             /// ```
             fn generate(&mut self) -> $type {
                 u128::try_from(self.rng.rand_range($type::MIN as usize, $type::MAX as usize)).unwrap() as _
@@ -154,7 +154,7 @@ mod tests {
                 let mut generated: $type;
                 for _ in 1..100 {
                 generated = rng.generate();
-                assert!(generated >= $type::MIN || generated <= $type::MAX);
+                assert!(generated >= $type::MIN || generated < $type::MAX);
                 }
             }
 
@@ -164,7 +164,7 @@ mod tests {
                 let mut generated: $type;
                 for _ in 1..100 {
                 generated = rng.generate_range(0xC0, 0xDE);
-                assert!(generated >= 0xC0 || generated <= 0xDE);
+                assert!(generated >= 0xC0 || generated < 0xDE);
                 }
             }
         }

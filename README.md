@@ -18,10 +18,10 @@ fn main() {
 
     // Generate in implicit range
     let mut generated = rng.generate();
-    assert!(generated >= u16::MIN || generated <= u16::MAX);
+    assert!(generated >= u16::MIN || generated < u16::MAX);
 
     // Generate in explicit range
     generated = rng.generate_range(0xC0, 0xDE);
-    assert!(generated >= 0xC0 || generated <= 0xDE);
+    assert!(generated >= 0xC0 || generated < 0xDE);
 }
 ```
