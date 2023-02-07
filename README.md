@@ -6,7 +6,7 @@ A zero-dependency, no_std-compatible, easily extendable library intended for fas
 
 To add to your Cargo.toml:
 ```toml
-picorand = "0.1.1"
+picorand = "0.1.2"
 ```
 
 ## Example

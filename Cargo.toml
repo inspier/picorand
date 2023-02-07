@@ -1,8 +1,8 @@
 [package]
 name = "picorand"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["inspier <devdevin541@gmail.com>"]
-edition = "2018"
+edition = "2021"
 documentation = "https://docs.rs/picorand"
 repository = "https://github.com/inspier/picorand"
 description = "A zero-dependency, no_std-compatible, easily extendable library intended for fast random number generation using the WyRand PRNG with a pico-sized footprint."
@@ -12,4 +12,4 @@ categories = ["algorithms", "no-std"]
 readme = "README.md"
 
 [dev-dependencies]
-paste = "1.0.4"
+paste = "1.0.11"
